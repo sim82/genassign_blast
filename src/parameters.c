@@ -123,6 +123,9 @@ char getFlag(char* argument)
 	}
 }
 
+
+
+
 // Process command line arguments and set parameters value
 void parameters_processArguments(int4 argc, char* argv[])
 {

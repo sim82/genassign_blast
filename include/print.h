@@ -1,9 +1,24 @@
 #ifndef _print_
 #define _print_
 
+
+typedef struct alignment_result_s {
+    char *ref_name;
+    char *qs_name;
+    int qs_start;
+    int qs_end;
+    int ref_start;
+    int ref_end;
+    
+   // alignment_result_s *next;
+    
+} alignment_result;
+
 // Format a sequence description so it wraps around lines nicely
 char* print_formatDescription(char* description, int4 firstLineIndent, int4 remainingLinesIndent,
                               int4 maxLineLength);
+
+alignment_result print_returnBestHit( char *query, struct PSSMatrix PSSMatrix );
 
 // Print4 full gapped alignments
 void print_gappedAlignmentsFull(char* query, struct PSSMatrix PSSMatrix);

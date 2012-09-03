@@ -79,4 +79,6 @@ void parameters_findScoringMatrix();
 
 void parameters_free();
 
+void parameters_setupQuick( const char *db_name, const char *qs_name );
+
 #endif

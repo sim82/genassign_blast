@@ -10,8 +10,12 @@
 #include <errno.h>
 #include <ctype.h>
 
-#define int4 int32_t
-#define uint4 uint32_t
+typedef int32_t int4;
+typedef uint32_t uint4;
+
+
+// #define int4 int32_t
+// #define uint4 uint32_t
 #define int8 int64_t
 #define uint8 uint64_t
 #define int2 int16_t

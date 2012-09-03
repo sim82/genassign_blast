@@ -4,7 +4,7 @@
 // provided that this statement is retained.
 //
 // Functions for displaying final alignments to the user in standard BLAST format
-
+#include <assert.h>
 #include "blast.h"
 
 // Prototypes
@@ -20,6 +20,13 @@ void print_XMLgappedExtension(struct gappedExtension* gappedExtension, struct PS
 void print_tabularGappedExtension(struct gappedExtension* gappedExtension, struct PSSMatrix PSSMatrix,
                                   char* query, unsigned char* subject, char* queryDescription,
                                   char* subjectDescription);
+
+
+// convert gappedExtension to alignment_result
+alignment_result print_gappedExtensionToResult(struct gappedExtension* gappedExtension, struct PSSMatrix PSSMatrix,
+                                char* query, unsigned char* subject, char* queryDescription,
+                                char* subjectDescription);
+
 
 // Construct the pairwise alignment
 void print_constructAlignment(char* queryLine, char* subjectLine, char* midLine,
@@ -358,6 +365,172 @@ char* print_encodeGreaterLessThan(char* description)
 
     return newDescription;
 }
+
+
+
+// Print full gapped alignments
+alignment_result print_returnBestHit( char *query, struct PSSMatrix PSSMatrix )
+{
+    struct alignment* alignment;
+    struct finalAlignment* finalAlignment;
+    struct gappedExtension* currentExtension;
+    char* description, *queryDescription;
+    unsigned char* subject;
+    int4 count = 0, descriptionLength, hspNum;
+    uint4 clusterSizes[alignments_numClusters];
+    uint4 queryDescriptionLength;
+
+    queryDescriptionLength = strlen(blast_queryDescription);
+    queryDescription = (char*)global_malloc(queryDescriptionLength + 1);
+    strcpy(queryDescription, blast_queryDescription);
+    queryDescription = print_untilWhitespace(queryDescription);
+
+    // Clear array of cluster sizes
+    count = 0;
+    while (count < alignments_numClusters)
+    {
+        clusterSizes[count] = 0;
+        count++;
+    }
+
+    // For each alignment we are to print the traceback
+    count = 0;
+    while ((count < parameters_numDisplayTracebacks || parameters_numDisplayTracebacks == 0)
+         && count < alignments_finalAlignments->numEntries)
+    {
+        finalAlignment = memSingleBlock_getEntry(alignments_finalAlignments, count);
+        alignment = finalAlignment->alignment;
+        if (alignment->cluster > 0)
+        {
+            clusterSizes[alignment->cluster]++;
+        }
+        count++;
+    }
+
+    
+    alignment_result res;
+    
+    // For each alignment we are to print the traceback
+    count = 0;
+    while ((count < parameters_numDisplayTracebacks || parameters_numDisplayTracebacks == 0)
+         && count < alignments_finalAlignments->numEntries)
+    {
+        finalAlignment = memSingleBlock_getEntry(alignments_finalAlignments, count);
+        alignment = finalAlignment->alignment;
+
+        // If this alignment is to be displayed
+        if (parameters_allClusterMembers || alignment->cluster == 0 ||
+            clusterSizes[alignment->cluster] > 0)
+        {
+            // Print description
+            if (parameters_getDescriptions)
+            {
+                // If we are in cafe mode, use cafe function to get the description
+                #ifdef CAFEMODE
+                description = print_cafeDescription(alignment->descriptionLocation, 0);
+                #else
+                descriptionLength = strlen(finalAlignment->description);
+                description = (char*)global_malloc(sizeof(char) * (descriptionLength + 1));
+                strcpy(description, finalAlignment->description);
+                #endif
+
+                if (parameters_outputType == parameters_xml)
+                {
+                    description = print_encodeGreaterLessThan(description);
+                }
+                else if (parameters_outputType == parameters_tabular)
+                {
+                    description = print_untilWhitespace(description);
+                }
+                else
+                {
+                    description = print_formatDescription(description, 0, 11, 68);
+                }
+            }
+            else
+            {
+                description = (char*)global_malloc(sizeof(char));
+                strcpy(description, "");
+            }
+
+//             if (parameters_outputType == parameters_xml)
+//             {
+//                 printf("        <Hit>\n");
+//                 printf("          <Hit_num>%d</Hit_num>\n", count + 1);
+//                 printf("          <Hit_id>gnl|BL_ORD_ID|%d</Hit_id>\n", alignment->descriptionLocation);
+//                 printf("          <Hit_def>%s</Hit_def>\n", description);
+//                 printf("          <Hit_accession>%d</Hit_accession>\n", alignment->descriptionLocation);
+//                 printf("          <Hit_len>%d</Hit_len>\n", alignment->subjectLength);
+//                 printf("          <Hit_hsps>\n");
+//             }
+//             else if (parameters_outputType == parameters_tabular)
+//             {
+//             }
+//             else
+//             {
+//                 printf(">%s\n", description);
+//                 if (!parameters_allClusterMembers && clusterSizes[alignment->cluster] > 1)
+//                 {
+//                     printf("          [%d near-identical alignment(s) not displayed]\n",
+//                            clusterSizes[alignment->cluster] - 1);
+//                     clusterSizes[alignment->cluster] = 0;
+//                 }
+// //                printf("          Length = %d DescriptionLocation = %d\n\n",
+// //                       alignment->subjectLength, alignment->descriptionLocation);
+//                 printf("          Length = %d\n\n", alignment->subjectLength);
+//             }
+
+            // Get list of gapped extensions
+            currentExtension = alignment->gappedExtensions;
+            hspNum = 0;
+
+            // For each gapped extension
+            while (currentExtension != NULL)
+            {
+                hspNum++;
+
+                if (parameters_ssearch)
+                    subject = alignment->subject;
+                else
+                    // Get the unpacked subject
+                    subject = unpack_selectRegion(alignment->unpackRegions, alignment->numUnpackRegions,
+                                                  currentExtension->subjectEnd)->unpackedSubject;
+                res = print_gappedExtensionToResult(currentExtension, PSSMatrix, query, subject, queryDescription, description );
+                                            
+                                                  
+               
+//                 // Print the gapped extension
+//                 if (parameters_outputType == parameters_xml)
+//                     print_XMLgappedExtension(currentExtension, PSSMatrix, query, subject, hspNum);
+//                 else if (parameters_outputType == parameters_tabular)
+//                     print_tabularGappedExtension(currentExtension, PSSMatrix, query, subject,
+//                                                  queryDescription, description);
+//                 else if (parameters_outputType != parameters_tabular)
+//                     print_gappedExtension(currentExtension, PSSMatrix, query, subject);
+
+                currentExtension = currentExtension->next;
+
+                assert( currentExtension == 0 ); // make sure that there is only one (=the best) alignment result
+            }
+
+            if (parameters_outputType == parameters_xml)
+            {
+                printf("          </Hit_hsps>\n");
+                printf("        </Hit>\n");
+            }
+
+            free(description);
+        }
+
+        count++;
+    }
+
+    free(queryDescription);
+
+    
+    return res;
+}
+
 
 // Print full gapped alignments
 void print_gappedAlignmentsFull(char* query, struct PSSMatrix PSSMatrix)
@@ -950,6 +1123,61 @@ void print_tabularGappedExtension(struct gappedExtension* gappedExtension, struc
 	free(midLine);
 }
 
+// Print a gapped extension using tabular output
+alignment_result print_gappedExtensionToResult(struct gappedExtension* gappedExtension, struct PSSMatrix PSSMatrix,
+                                  char* query, unsigned char* subject, char* queryDescription,
+                                  char* subjectDescription)
+{
+    char *queryLine, *subjectLine, *midLine;
+    int4 identities = 0, positives = 0, gaps = 0, length, gapopens = 0;
+    struct trace trace;
+    char reverseComplement = 0;
+
+    trace = gappedExtension->trace;
+
+    if (trace.queryStart >= PSSMatrix.strandLength)
+    {
+        trace.queryStart = PSSMatrix.length - trace.queryStart - 1;
+        reverseComplement = 1;
+    }
+
+    // Declare memory for query, subject and midlines
+    queryLine = (char*)global_malloc(sizeof(char) * (trace.length + 2));
+    subjectLine = (char*)global_malloc(sizeof(char) * (trace.length + 2));
+    midLine = (char*)global_malloc(sizeof(char) * (trace.length + 2));
+    queryLine[0] = '\0'; subjectLine[0] = '\0'; midLine[0] = '\0';
+
+    length = trace.length + 1;
+
+    print_constructAlignment(queryLine, subjectLine, midLine, &identities, &positives, &gaps,
+                             &gapopens, reverseComplement, trace, query, subject, PSSMatrix);
+
+    // Fields: query id, subject ids, % identity, alignment length, mismatches, gap opens,
+    //         q. start, q. end, s. start, s. end, evalue, bit score
+//     printf("%s  %s  %.2f    %d  %d  %d  %d  %d  %d  %d  %s  %.1f\n",
+//            queryDescription, subjectDescription, 100.0 * (float)identities / (float)length,
+//            length, length - identities, gapopens, trace.queryStart + 1,
+//            gappedExtension->queryEnd + 1, trace.subjectStart + 1, gappedExtension->subjectEnd + 1,
+//            print_eValue2String(gappedExtension->eValue), gappedExtension->normalizedScore);
+
+    alignment_result res;
+    res.ref_name = strdup( subjectDescription );
+    res.qs_name = strdup( queryDescription );
+    res.qs_start = trace.queryStart + 1;
+    res.qs_end = gappedExtension->queryEnd + 1;
+    res.ref_start = trace.subjectStart + 1;
+    res.ref_end = gappedExtension->subjectEnd + 1;
+    
+    
+    free(queryLine);
+    free(subjectLine);
+    free(midLine);
+
+    
+    return res;
+}
+
+
 // Print a gapped extension using XML output
 void print_XMLgappedExtension(struct gappedExtension* gappedExtension, struct PSSMatrix PSSMatrix,
                               char* query, unsigned char* subject, uint4 hspNum)
@@ -1001,3 +1229,4 @@ void print_XMLgappedExtension(struct gappedExtension* gappedExtension, struct PS
 	free(midLine);
 
 }
+
