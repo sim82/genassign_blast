@@ -550,7 +550,7 @@ void blast_search(char* searchDbFile, struct PSSMatrix PSSMatrix, char* query, c
 
 
 
-int4 mainblast()
+int4 mainblast( const char *db_name, const char *query_name )
 {
     char *query, *queryDescription;
     unsigned char queryAlphabetType, previousQueryAlphabetType = 10;
@@ -565,7 +565,7 @@ int4 mainblast()
     //parameters_processArguments(argc, const_cast<char**>(argv));
 
     //setup parameters to dumbed down input data
-    parameters_setupQuick( "orig.phy.1.fa", "qs.fa.5000" );
+    parameters_setupQuick( db_name, query_name );
     
     
     
@@ -733,14 +733,16 @@ int4 mainblast()
 }
 
 
-int main() {
-    const char *fargv[] = { "formatdb", "orig.phy.1.fa" };
+int main( int argc, char *argv[] ) {
+	
+	
+    const char *fargv[] = { "formatdb", argv[1] };
     int fargc = 2;
     mainformat( fargc, fargv );
     
 //     const char *bargv[] = { "blast", "-d", "1604.fa", "-i", "qs.fa.full", "-m", "8" };
 //     int bargc = 7;
 //     mainblast( bargc, bargv );
-    mainblast();
+    mainblast( argv[1], argv[2] );
     
 }

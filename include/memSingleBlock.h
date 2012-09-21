@@ -22,10 +22,10 @@ void memSingleBlock_initializeExisting(struct memSingleBlock* memSingleBlock,
 extern inline void* memSingleBlock_newEntry(struct memSingleBlock* memSingleBlock);
 
 // Reset the current position to the beginning
-extern inline void memSingleBlock_resetCurrent(struct memSingleBlock* memSingleBlock);
+extern void memSingleBlock_resetCurrent(struct memSingleBlock* memSingleBlock);
 
 // Get the current entry and advance to the next
-extern inline void* memSingleBlock_getCurrent(struct memSingleBlock* memSingleBlock);
+extern void* memSingleBlock_getCurrent(struct memSingleBlock* memSingleBlock);
 
 // Get a specific entry in the block
 extern inline void* memSingleBlock_getEntry(struct memSingleBlock* memSingleBlock, int4 position);

@@ -8,7 +8,8 @@
 //#include "genwin.h"
 
 /*---------------------------------------------------------------(defines)---*/
-
+#include <stdlib.h>
+#include <string.h>
 #define STRSIZE 100
 
 /*----------------------------------------------------------------(protos)---*/
@@ -53,7 +54,7 @@ struct strlist
 
 #define TESTMAX 1000
 void *tmalloc();
-int record_ptrs[TESTMAX] = {0,0,0,0};
+size_t record_ptrs[TESTMAX] = {0,0,0,0};
 int rptr = 0;
 
 /*------------------------------------------------------------(genwininit)---*/
@@ -851,7 +852,7 @@ void *tmalloc(size)
       exit(2);
      }
 
-   record_ptrs[rptr] = (int) ptr;
+   record_ptrs[rptr] = (size_t) ptr;
    rptr++;
 
    return(ptr);
@@ -866,7 +867,7 @@ tfree(ptr)
 
    for (i=0; i<rptr; i++)
      {
-      if (record_ptrs[i]==(int)ptr)
+      if (record_ptrs[i]==(size_t)ptr)
         {
          record_ptrs[i] = 0;
          break;
